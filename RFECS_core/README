@@ -1,0 +1,120 @@
+TRAINING
+
+forest_training_part1 or forest_training_part1_parallel can be used to train the forest based on available p300 data
+
+set_p300_tssbg is the input training matrix and has the following columns when the len_var parameter selected is 20:
+
+	mod1(-1kb) mod1(-0.9kb)...mod1(0kb)...mod1(0.9kb) mod1(1kb)  mod2(-1kb) mod2(-0.9kb)...mod2(0kb)...mod2(0.9kb) mod2(1kb)...
+
+If more bins around the training set sites need to be selected, say -2 to +2kb,then the columns would be
+ mod1(-2kb) mod1(-1.9kb)...mod1(0kb)...mod1(1.9kb) mod1(2kb)  mod2(-2kb) mod2(-1.9kb)...mod2(0kb)...mod2(1.9kb) mod2(2kb)...
+
+
+if len_var is the number of bins, len_var=20 would correspond to a width of -1 to +1kb and len_var=40 would correspomd to a width of -2 to +2kb. The number of columns in the training matrix would be len_var*nvar where nvar is the number of modifications
+
+set_p300_tssbg would have each row corresponding to either a p300 training site, active TSS or random background
+If there are x p300 sites, x TSS sites and 8x random background, the number of rows in the training matrix would be 10x.
+
+the labels vals would be a column vector of the form : 
+		
+1		|
+1		|
+1		x
+1		|	
+...		|
+...            
+0		|
+0               |
+0               9x
+0               |
+0		|
+
+with 1's corresponding to the p300-rows and 0's corresponding to the non-p300 rows(either TSS or random backgound)
+
+
+An example of set_p300_tssbg and vals can be seen in the folder examples.
+
+forest_trainin_part2 and forest_training_part2_parallel compute the probability matrix "prob_bg_p300_dist" for peak-calling. Each row of the probability matrix corresponds to a background cutoff or voting percentage.Each column corresponds to a bin from -2 to +2 kb along the p300-binding site. Each cell in the matrix provides the probability for a bin along the p300 binding site to have a certain voting percentage. This does not change much across cell-types and modifications, hence previously trained prob_bg_p300_dist may be used forother cases as well.
+
+Trained forests and probability matrices for CD4,H1 and IMR90, are available for either all 24 modifications, k27ac-k4me1-k4me3 or k4me1-k4me2-k4me3 combinations are also made available in the folder "trained_forests".Order of 24 modifications is provided below.
+
+PREDICTIONS
+
+forest_predict may be used to make predictions
+
+The trained forest "forest_p300_tssbg_all" and probability matrix "prob_bg_p300_dist" are needed for this purpose and maybe loaded from the mat-files in which they were saved.
+
+Input files should be labelled as "all_mods_chr*" for each chromosome and stored in the directory input_path/
+
+Input files should have the following format, with a  single value for each bin and each modifciation
+
+
+       			mod1	mod2	mod3.....
+0
+100
+200
+....
+...
+...
+last bin of chrom
+
+if there are 2000000 100bp bins in the chromsome and we used 10 modifications for training, the input file will have the size 200000 X 10
+
+An example of the input-file from IMR90 for chr1 is "all_mods_chr1" in this directory
+
+mod_vec parameter should be in the form [1:24] or the columns that need to be selected from the all_mods_chr* file.If we want to select H3K4me1/2/3, then it will be [14:16]
+input_path parameter should be in the form 'input_folder/all_mods_'
+output_path parameter should be in the form 'output_folder/'
+extn parameter maybe a string of the form 'k27ac_k4me1_k4me3' or '_all_24_marks' etc
+chr_set is a string of the form {'chr1','chr2','chr3'...} 
+peak_filt_dist is the minimum distance allowed between enhancer-calls. This is usually set to 20 (2kb).
+	
+output will be in the form of mat-files and text-files for each chromosome "output_folder/chr*extn.mat" or "output_folder/chr*extn.txt"
+chr*extn.mat contains the intermediate files for enhancers in chr1 , "mean_bg_all" which is the voting percentage for each bin in the chromsome.
+chr*extn.txt contains the enhancer predictions (after peak-calling) for any one chromsome in the format:
+
+chromsome	location	mean_bg
+
+mean_bg is a cutoff between 0.5 and 1 . The higher the cutoff, the more confident the prediction.
+
+An example for chr predictions in IMR90, using all 24 modifications(ntrees=65) is provided in the folder IMR90_examples as chr1_24mods.txt
+
+Parallelization
+
+Parallel versions of training and predictions incorporate parallel for-loops or "parfor" loops and require specification of number of labs to used in the parameter "poolsize".
+
+It is recommended to use the parallel versions for faster processing, unless MATLAB is installed on a system with low RAM or very few processors. 
+
+An example for prediction is provided in the examples/run_predict.m to predict enhancers in chr1 using H1-trained forest with all 24 modifications. 
+
+
+Order of 24 marks
+
+In the case of all 24 marks, the ordering used in the training and prediction is as follows:
+H2AK5ac
+H2BK120ac
+H2BK12ac
+H2BK15ac
+H2BK20ac
+H2BK5ac
+H3K14ac
+H3K18ac
+H3K23ac
+H3K27ac
+H3K27me3
+H3K36me3
+H3K4ac
+H3K4me1
+H3K4me2
+H3K4me3
+H3K56ac
+H3K79me1
+H3K79me2
+H3K9ac
+H3K9me3
+H4K20me1
+H4K5ac
+H4K91ac
+
+
+

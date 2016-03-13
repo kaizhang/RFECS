@@ -1,0 +1,52 @@
+name:                RFECS
+version:             0.1.0
+synopsis:            Inferring cooperation of DNA binding proteins in 3D genome.
+description:         Inferring cooperation of DNA binding proteins in 3D genome.
+license:             MIT
+license-file:        LICENSE
+author:              Kai Zhang
+maintainer:          kai@kzhang.org
+copyright:           (c) 2015 Kai Zhang
+category:            Bio
+build-type:          Simple
+
+extra-source-files:
+  ChangeLog.md
+  README.md
+  stack.yaml
+
+cabal-version:       >=1.10
+
+executable rfecs
+  main-is:             Main.hs
+  other-modules:
+    Paths_RFECS
+    RFECS.Type
+    RFECS.Utils
+    RFECS.Constants
+
+  build-depends:
+      base >=4.8 && <5.0
+    , aeson
+    , bioinformatics-toolkit
+    , bytestring
+    , conduit-extra
+    , conduit-combinators
+    , cryptohash
+    , data-default
+    , double-conversion
+    , lens
+    , matrices >= 0.4.3
+    , mmorph
+    , optparse-applicative
+    , resourcet
+    , shelly
+    , split
+    , text
+    , transformers-base
+    , unordered-containers
+    , vector
+    , yaml
+
+  hs-source-dirs:      src
+  default-language:    Haskell2010

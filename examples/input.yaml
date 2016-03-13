@@ -1,0 +1,24 @@
+- id: h3k4me1  # id is optional except for the control experiments.
+  target: H3K4me1
+  files:
+      - path: data/H3K4me1.bed.gz
+        format: BedGZip
+  control: input  # The id of the control experiment. This is an optional field.
+
+- target: H3K4me3
+  files:
+      - path: data/H3K4me3.bed.gz
+        format: BedGZip
+  control: input
+
+- target: H3K27ac
+  files:
+      - path: data/H3K27ac.bed.gz
+        format: BedGZip
+  control: input
+
+- id: input
+  target: Input
+  files:
+      - path: data/Input.bed.gz
+        format: BedGZip

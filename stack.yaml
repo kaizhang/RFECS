@@ -1,0 +1,10 @@
+flags: {}
+
+packages:
+    - '.'
+    - '../bioinformatics-toolkit'
+
+extra-deps:
+    - samtools-0.2.4.1
+
+resolver: lts-5.5
