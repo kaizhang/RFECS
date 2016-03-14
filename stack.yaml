@@ -2,9 +2,9 @@ flags: {}
 
 packages:
     - '.'
-    - '../bioinformatics-toolkit'
 
 extra-deps:
     - samtools-0.2.4.1
+    - bioinformatics-toolkit-0.2.0
 
 resolver: lts-5.5
