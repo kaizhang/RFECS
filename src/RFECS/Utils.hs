@@ -18,14 +18,14 @@ withTmpFile :: FilePath -> (FilePath -> IO a) -> IO a
 withTmpFile dir = bracket create delete
   where
     create = shelly $ fmap (T.unpack . head . T.lines) $ silently $
-        run "mktemp" [T.pack $ dir ++ "/tmp_file_XXXXXXXX_delete.me"]
+        run "mktemp" [T.pack $ dir ++ "/RFECS_tmp_XXXXXXXX"]
     delete = shelly . rm . fromText . T.pack
 
 withTmpDir :: FilePath -> (FilePath -> IO a) -> IO a
 withTmpDir dir = bracket create delete
   where
     create = shelly $ fmap (T.unpack . head . T.lines) $ silently $
-        run "mktemp" ["-d", T.pack $ dir ++ "/tmp_dir_XXXXXXXX_delete.me"]
+        run "mktemp" ["-d", T.pack $ dir ++ "/RFECS_tmp_XXXXXXXX"]
     delete = shelly . rm_rf . fromText . T.pack
 
 readLoops :: FilePath -> IO [(BED3, BED3)]

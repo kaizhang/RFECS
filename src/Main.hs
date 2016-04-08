@@ -1,54 +1,52 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleContexts #-}
 module Main where
 
-import Bio.ChIPSeq (rpkmBinBed)
-import Bio.Utils.Functions (slideAverage)
-import Bio.Data.Bed
-import Control.Monad.Base (liftBase)
-import Control.Monad.Morph (hoist)
-import Conduit
-import Data.Conduit.Zlib (ungzip)
-import Control.Monad
-import Control.Lens((.~), (^.))
-import Control.Arrow (second)
-import Data.Yaml (decodeFileEither, prettyPrintParseException)
-import qualified Data.ByteString.Char8 as B
-import Paths_RFECS (version)
-import Data.Version (showVersion)
-import Text.Printf (printf)
-import Options.Applicative
-import Data.List
-import Data.Default
-import Shelly hiding (FilePath, withTmpDir)
-import Data.Maybe
-import qualified Data.Text as T
-import qualified Data.Vector.Unboxed as U
-import qualified Data.Matrix.Unboxed as MU
-import Data.Double.Conversion.ByteString (toFixed)
-import System.IO
+import           Bio.ChIPSeq                       (rpkmBinBed)
+import           Bio.Data.Bed
+import           Bio.Utils.Functions               (slideAverage)
+import           Bio.Utils.Misc                    (readDouble, readInt)
+import           Conduit
+import           Control.Arrow                     (second)
+import           Control.Lens                      ((.~), (^.))
+import           Control.Monad
+import           Control.Monad.Base                (liftBase)
+import           Control.Monad.Morph               (hoist)
+import qualified Data.ByteString.Char8             as B
+import           Data.Conduit.Zlib                 (ungzip)
+import           Data.Default
+import           Data.Double.Conversion.ByteString (toFixed)
+import           Data.List
+import qualified Data.Matrix.Unboxed               as MU
+import           Data.Maybe
+import qualified Data.Text                         as T
+import qualified Data.Vector.Unboxed               as U
+import           Data.Version                      (showVersion)
+import           Data.Yaml                         (decodeFileEither,
+                                                    prettyPrintParseException)
+import           Options.Applicative
+import           Paths_RFECS                       (version)
+import           Shelly                            hiding (FilePath, withTmpDir)
+import           System.IO
+import           Text.Printf                       (printf)
 
-import RFECS.Type hiding (info)
-import RFECS.Utils
-import RFECS.Constants
+import           RFECS.Constants
+import           RFECS.Type                        hiding (info)
+import           RFECS.Utils
 
 data Options = Options
-    { input :: FilePath
-    , output :: FilePath
+    { input   :: FilePath
+    , output  :: FilePath
     , chrSize :: String
-    , cmd :: FilePath
+    , cmd     :: FilePath
     , chrsets :: String
+    , tmp :: FilePath
     } deriving (Show, Read)
 
 parser :: Parser Options
 parser = Options
      <$> argument str (metavar "INPUT")
-     <*> strOption
-           ( long "output"
-          <> short 'o'
-          <> value "RFECS_output"
-          <> help "Output directory. Default: RFECS_output"
-          <> metavar "OUTPUT" )
+     <*> argument str (metavar "OUTPUT")
      <*> strOption
            ( long "genome"
           <> short 'g'
@@ -64,9 +62,14 @@ parser = Options
           <> help "Specify which chromosomes to be analyzed, example: 'chr1,chr2'. Use 'all' for whole genome. Default: all."
           <> value "all"
           <> metavar "CHROMOSOME" )
+     <*> strOption
+           ( long "tmp"
+          <> help "Specify the directory for storing temparary files. Default: current directory."
+          <> value "./"
+          <> metavar "TMP_DIR" )
 
 defaultMain :: Options -> IO ()
-defaultMain (Options inFl outDir chrsize rfecs chrsets) = do
+defaultMain (Options inFl output chrsize rfecs chrsets tmp) = do
     genome <- case chrsize of
         "hg19" -> return hg19ChrSize
         "mm10" -> return mm10ChrSize
@@ -79,11 +82,21 @@ defaultMain (Options inFl outDir chrsize rfecs chrsets) = do
     r <- decodeFileEither inFl
     case r of
         Left e -> error $ prettyPrintParseException e
-        Right inputs -> do
+        Right inputs -> withTmpDir tmp $ \tmpDir -> do
             let chrBed = map (\(chr,e) -> BED3 chr 0 e) chr
             rcs <- readCount chrBed inputs
-            writeReadCount outDir $ zip (fst $ unzip chr) rcs
-            rfecs_matlab "matlab" rfecs (rfecs ++ "/model_human_3marks.mat") outDir outDir
+            writeReadCount tmpDir $ zip (fst $ unzip chr) rcs
+            rfecs_matlab "matlab" rfecs (rfecs ++ "/model_human_3marks.mat")
+                tmpDir tmpDir
+            fls <- shelly $ lsT $ fromText $ T.pack tmpDir
+            enhancers <- forM (filter ("_enhancers.txt" `T.isSuffixOf`) fls) $ \fl -> do
+                c <- B.readFile $ T.unpack fl
+                return $ map (f . B.split '\t') $ B.lines c
+            writeBed' output $ concat enhancers
+  where
+    f [a,b,c] = BED a (readInt b - 1000) (readInt b + 1000) Nothing
+        (Just $ readDouble c) Nothing
+
 
 writeReadCount :: FilePath -> [(B.ByteString, MU.Matrix Float)] -> IO ()
 writeReadCount dir xs = forM_ xs $ \(chr, rc) -> do
