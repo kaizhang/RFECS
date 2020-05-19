@@ -1,12 +1,12 @@
 name:                RFECS
-version:             0.1.0
-synopsis:            Inferring cooperation of DNA binding proteins in 3D genome.
-description:         Inferring cooperation of DNA binding proteins in 3D genome.
+version:             0.2.0
+synopsis:            A wrapper for RFECS
+description:         A wrapper for RFECS
 license:             MIT
 license-file:        LICENSE
 author:              Kai Zhang
 maintainer:          kai@kzhang.org
-copyright:           (c) 2015 Kai Zhang
+copyright:           (c) 2015-2020 Kai Zhang
 category:            Bio
 build-type:          Simple
 

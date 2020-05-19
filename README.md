@@ -8,7 +8,7 @@ How to use
 
 Unpack the tarball and type `rfecs -h` to see help information.
 
-As an example, you can go to the `example` directory, and run `rfecs input.yaml RFECS_output -p ../RFECS_core -g hg19 --chrom chr21`. After 10~20 minutes, you will see the results in a directory named `RFECS_output`.
+As an example, you can go to the `example` directory, and run `rfecs input.yaml enhancer.txt -p ../RFECS_core -g hg19 --chrom chr21`. After 10~20 minutes, the results will be saved to a file named `enhancer.txt`.
 
 Build from source
 =================
