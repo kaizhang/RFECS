@@ -4,7 +4,8 @@ packages:
     - '.'
 
 extra-deps:
-    - samtools-0.2.4.1
-    - bioinformatics-toolkit-0.2.0
+    - bioinformatics-toolkit-0.9.3.1
+    - HsHTSLib-1.9.2@sha256:a2a4f0717c59e0d3c311a9f4cab235649b00e9f3bb4168009187e54aeefe18a1,3015
+    - clustering-0.4.1@sha256:78d8e077f27526ff03b3879d951e09e040ca7dc23dd0e6044970be9d40ea37e2,2066
 
-resolver: lts-5.5
+resolver: lts-15.13

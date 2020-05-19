@@ -35,8 +35,8 @@ readLoops fl = (map toLoop . tail . B.lines) <$> B.readFile fl
 toLoop :: B.ByteString -> (BED3, BED3)
 toLoop x =
     let xs = B.split '\t' x
-    in ( BED3 (xs !! 0) (readInt $ xs !! 1) (readInt $ xs !! 2)
-       , BED3 (xs !! 3) (readInt $ xs !! 4) (readInt $ xs !! 5)
+    in ( asBed (xs !! 0) (readInt $ xs !! 1) (readInt $ xs !! 2)
+       , asBed (xs !! 3) (readInt $ xs !! 4) (readInt $ xs !! 5)
        )
 {-# INLINE toLoop #-}
 
