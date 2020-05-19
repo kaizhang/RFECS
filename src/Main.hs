@@ -145,12 +145,12 @@ rfecs_matlab matlab_path rfecs_path model inputDir output = do
     chrset <- fmap (intercalate "," . map ((\x -> "'" ++ x ++ "'") . T.unpack .
         snd . T.breakOnEnd "/")) $ shelly $ lsT $ fromText $ T.pack inputDir
     let script = printf ( "addpath('%s')," ++
-            "matlabpool(2)," ++
+            "parpool(2)," ++
             "extn ='_enhancers';," ++
             "chr_set={%s};," ++
             "load %s," ++
             "forest_predict_par(forest_p300_tssbg_all,3,65,20,[1:3],extn,20,'%s/','%s/',chr_set);," ++
-            "matlabpool close," ++
+            "parpool close," ++
             "exit" ) rfecs_path chrset model inputDir output
     shelly $ run_ (fromText $ T.pack matlab_path)
         ["-nodisplay", "-nosplash", "-nodesktop", "-r", T.pack script]
