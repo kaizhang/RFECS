@@ -2,18 +2,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import           Bio.ChIPSeq                       (rpkmBinBed)
+import           Bio.Data.Bed.Utils (countTagsBinBed)
 import           Bio.Data.Bed
+import           Bio.Data.Bed.Types
 import           Bio.Utils.Functions               (slideAverage)
 import           Bio.Utils.Misc                    (readDouble, readInt)
 import           Conduit
 import           Control.Arrow                     (second)
 import           Control.Lens                      ((.~), (^.))
 import           Control.Monad
-import           Control.Monad.Base                (liftBase)
-import           Control.Monad.Morph               (hoist)
 import qualified Data.ByteString.Char8             as B
-import           Data.Conduit.Zlib                 (ungzip)
 import           Data.Default
 import           Data.Double.Conversion.ByteString (toFixed)
 import           Data.List
@@ -50,7 +48,7 @@ parser = Options
      <*> strOption
            ( long "genome"
           <> short 'g'
-          <> help "A file that lists all chromosomes' sizes. Built-in genome: hg19 and mm10."
+          <> help "A file that lists all chromosomes' sizes. Built-in genome: hg19, hg38, mm10."
           <> metavar "GENOME" )
      <*> strOption
            ( long "path"
@@ -72,6 +70,7 @@ defaultMain :: Options -> IO ()
 defaultMain (Options inFl output chrsize rfecs chrsets tmp) = do
     genome <- case chrsize of
         "hg19" -> return hg19ChrSize
+        "hg38" -> return hg38ChrSize
         "mm10" -> return mm10ChrSize
         _ -> readChrSize chrsize
 
@@ -83,7 +82,7 @@ defaultMain (Options inFl output chrsize rfecs chrsets tmp) = do
     case r of
         Left e -> error $ prettyPrintParseException e
         Right inputs -> withTmpDir tmp $ \tmpDir -> do
-            let chrBed = map (\(chr,e) -> BED3 chr 0 e) chr
+            let chrBed = map (\(chr,e) -> asBed chr 0 e) chr
             rcs <- readCount chrBed inputs
             writeReadCount tmpDir $ zip (fst $ unzip chr) rcs
             rfecs_matlab "matlab" rfecs (rfecs ++ "/model_human_3marks.mat")
@@ -92,10 +91,10 @@ defaultMain (Options inFl output chrsize rfecs chrsets tmp) = do
             enhancers <- forM (filter ("_enhancers.txt" `T.isSuffixOf`) fls) $ \fl -> do
                 c <- B.readFile $ T.unpack fl
                 return $ map (f . B.split '\t') $ B.lines c
-            writeBed' output $ concat enhancers
+            B.writeFile output $ B.unlines $ map g $ concat enhancers
   where
-    f [a,b,c] = BED a (readInt b - 1000) (readInt b + 1000) Nothing
-        (Just $ readDouble c) Nothing
+    f [a,b,c] = (BED3 a (readInt b - 1000) (readInt b + 1000), c)
+    g (x, v) = toLine x <> "\t" <> v
 
 
 writeReadCount :: FilePath -> [(B.ByteString, MU.Matrix Float)] -> IO ()
@@ -114,11 +113,11 @@ readCount :: [BED3]  -- ^ regions
 readCount chr es = do
     rpkms <- forM es $ \exp -> do
         let [fl] = exp^.files
-        (v, n) <- runResourceT $ readBedFromFile fl $$ hoist liftBase (rpkmBinBed 100 chr)
+        (v, n) <- runResourceT $ runConduit $ readBedFromFile fl .| countTagsBinBed 100 chr
         let factor = fromIntegral n / 1e7
             v' :: [U.Vector Float]
-            v' | exp^.target == "Input" = map (slideAverage 2 . U.map (/ factor)) v
-               | otherwise = map (U.map (/ factor)) v
+            v' | exp^.target == "Input" = map (slideAverage 2 . U.map ((/factor) . fromIntegral)) (v :: [U.Vector Int])
+               | otherwise = map (U.map ((/ factor) . fromIntegral)) v
         return (exp^.eid, v')
 
     let rs = flip map (filter f rpkms) $ \(id', v) ->
@@ -134,9 +133,8 @@ readCount chr es = do
     expMap = map (\x -> (x^.eid, x)) es
     f (id',_) = (fromJust (lookup id' expMap) ^. target) /= "Input"
     readBedFromFile fl = case fl^.format of
-        Bed -> readBed $ fl^.location
-        BedGZip -> sourceFile (fl^.location) =$= ungzip =$=
-            linesUnboundedAsciiC =$= mapC fromLine
+        Bed -> streamBed $ fl^.location
+        BedGZip -> streamBedGzip $ fl^.location
         _ -> error "Unknown input format"
 {-# INLINE readCount #-}
 

@@ -30,16 +30,13 @@ executable rfecs
     , aeson
     , bioinformatics-toolkit
     , bytestring
-    , conduit-extra
-    , conduit-combinators
+    , conduit
     , cryptohash
     , data-default
     , double-conversion
     , lens
     , matrices >= 0.4.3
-    , mmorph
     , optparse-applicative
-    , resourcet
     , shelly
     , split
     , text
